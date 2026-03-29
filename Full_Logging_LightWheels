@@ -71,3 +71,56 @@ void Loop(){
     
     }
 }
+
+void ReadIMU() {
+ // Check if we have a full 11-byte packet waiting
+if (Serial1.read() == 0x55){ // Header
+  byte type = Serial1.read();
+if (type == 0x53) { // Euler Angles
+  int16_t rRaw = (Serial1.read() | (Serial1.read() << 8));
+  int16_t pRaw = (Serial1.read() | (Serial1.read() << 8));
+  int16_t yRaw = (Serial1.read() | (Serial1.read() << 8));
+
+// Discard temperature and checksum
+for(int i=0; i<3; i++) Serial1.read();
+
+// Convert to human degrees
+Roll = (float)rRaw / 32768.0 * 180.0;
+Pitch = (float)pRaw / 32768.0 * 180.0;
+Yaw = (float)yRaw / 32768.0 * 180.0;
+
+    } 
+   }
+  }
+ }
+
+void LogData(unsigned long timeStamp) {
+  File DataFile =  SD.open("LightWheels_Rover.csv", FILE_WRITE);
+  if (dataFile) {
+     DigitalWrite(LedPIn, HIGH);  // GREEN LIGHT: LOGGING ACTIVE!
+
+     DataFile.print(TimeStamp); DataFile.print(",");
+     DataFile.print(Roll); DataFile.print(",");
+     DataFile.print(Pitch); DataFile.print(",");
+     DataFile.print(Yaw); DataFile.print(",");
+
+     // Log all 6 encoder counts
+     for(int i = 0; i < 6; i++){
+        DataFile.print(counts[i]);
+        if(i < 5) DataFile.print(",");
+}
+         DataFile.println();
+         DataFile.close();
+}  else {
+         DigitalWrite(LedPin, LOW);  // LIGHT OFF: SD ERROR!
+}
+}
+
+
+     }
+
+
+
+
+}
+}
