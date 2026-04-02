@@ -13,6 +13,7 @@ void ISR_MOTOR_4() { counts[3]++; }
 void ISR_MOTOR_5() { counts[4]++; }
 void ISR_MOTOR_6() { counts[5]++; }
 
+int MotorPWM[6] = {0, 0, 0, 0, 0, 0}  // Current SPEED being sent to each motor from a range of 0 to 255
 const int EncoderPins[6] = {22, 23, 24, 25, 26, 27};
 
 // 2 ;) IMU & LOGGING GEAR
@@ -26,23 +27,23 @@ float Roll = 0; Pitch = 0; Yaw = 0;
 void setup(){
     Serial.begin(115200);  // Laptop
     Serial1.begin(115200); // IMU (WT901C)
-    PinMode(ledPin, OUTPUT);
+    pinMode(ledPin, OUTPUT);
 
     // Initialise Encoders
     for(int i = 0; i < 6; i++){
-        PinMode(EncoderPins[i], INPUT_PULLUP);
+        pinMode(EncoderPins[i], INPUT_PULLUP);
     }
-    AttachInterrupt(DigitalPinToInterrupt(EncoderPins[0]), ISR_MOTOR_1, RISING);
-    AttachInterrupt(DigitalPinToInterrupt(EncoderPins[1]), ISR_MOTOR_2, RISING);
-    AttachInterrupt(DigitalPinToInterrupt(EncoderPins[2]), ISR_MOTOR_3, RISING);
-    AttachInterrupt(DigitalPinToInterrupt(EncoderPins[3]), ISR_MOTOR_4, RISING);
-    AttachInterrupt(DigitalPinToInterrupt(EncoderPins[4]), ISR_MOTOR_5, RISING);
-    AttachInterrupt(DigitalPinToInterrupt(EncoderPins[5]), ISR_MOTOR_6, RISING);
+    attachInterrupt(DigitalPinToInterrupt(EncoderPins[0]), ISR_MOTOR_1, RISING);
+    attachInterrupt(DigitalPinToInterrupt(EncoderPins[1]), ISR_MOTOR_2, RISING);
+    attachInterrupt(DigitalPinToInterrupt(EncoderPins[2]), ISR_MOTOR_3, RISING);
+    attachInterrupt(DigitalPinToInterrupt(EncoderPins[3]), ISR_MOTOR_4, RISING);
+    attachInterrupt(DigitalPinToInterrupt(EncoderPins[4]), ISR_MOTOR_5, RISING);
+    attachInterrupt(DigitalPinToInterrupt(EncoderPins[5]), ISR_MOTOR_6, RISING);
 
     // Initialise SD card
     if(!SD.begin(chipselect)){
         while (1){ // SOS Flash if SD fails 
-            DigitalWrite(ledPin, HIGH); delay(100); DigitalWrite(ledPin, LOW); delay(100);
+            digitalWrite(ledPin, HIGH); delay(100); digitalWrite(ledPin, LOW); delay(100);
         }   
     }
 
@@ -53,13 +54,13 @@ void setup(){
     // Create CSV Header for Sarah
     File DataFile = SD.open("LightWheels_Rover.csv", FILE_WRITE);
     if (DataFile){
-        DataFile.println("Time_ms,Roll,Pitch,Yaw,M1,M2,M3,M4,M5,M6");
+        DataFile.println("Time_ms,Roll,Pitch,Yaw,M1_Count,M2_Count,M3_Count,M4_Count,M5_Count,M6_Count,V1_PWM,V2_PWM,V3_PWM,V4_PWM,V5_PWM,V6_PWM");
         DataFile.close();
     }   
-}
+
 
 void Loop(){
-    unsinged long currentMillis = millis();
+    unsigned long currentMillis = millis();
 
     // Always listen for IMU data in the background
     ReadIMU();
@@ -70,7 +71,7 @@ void Loop(){
         logData(currentMillis);
     
     }
-}
+ }
 
 void ReadIMU() {
  // Check if we have a full 11-byte packet waiting
@@ -94,7 +95,7 @@ Yaw = (float)yRaw / 32768.0 * 180.0;
   }
  }
 
-void LogData(unsigned long timeStamp) {
+void LogData(unsigned long TimeStamp) {
   File DataFile =  SD.open("LightWheels_Rover.csv", FILE_WRITE);
   if (dataFile) {
      DigitalWrite(LedPIn, HIGH);  // GREEN LIGHT: LOGGING ACTIVE!
@@ -107,20 +108,20 @@ void LogData(unsigned long timeStamp) {
      // Log all 6 encoder counts
      for(int i = 0; i < 6; i++){
         DataFile.print(counts[i]);
-        if(i < 5) DataFile.print(",");
-}
-         DataFile.println();
-         DataFile.close();
-}  else {
-         DigitalWrite(LedPin, LOW);  // LIGHT OFF: SD ERROR!
-}
-}
+        DataFile.print(","); // a comma to seperate data
+      }
 
-
+    // Log THE PWM/Voltage INPUTS FOR ALL 6 motors
+     for(int i = 0; i < 6; i++){
+         DataFile.print(MotorPWM[i]);
+         if(i<5) DataFile.print(",");
      }
 
+         DataFile.println();
+         DataFile.close();
+         digitalWrite(ledPin, LOW);  // LIGHT OFF: SD ERROR!   
+
+} }
 
 
-
-}
-}
+     
