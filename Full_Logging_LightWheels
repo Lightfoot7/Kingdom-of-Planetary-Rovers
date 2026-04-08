@@ -1,10 +1,10 @@
 #include <SPI.h>
 #include <SD.h>
+File DataFile; // MAKE FILE GLOBAL
 
 // 1 :) ENCODER HAKI (6 MOTORS)
 // use volatile so brain processor sees every tiny movement instantly
 volatile long counts[6] = {0, 0, 0, 0, 0, 0};
-
 // Interrupt ISR Functions so it makes it count pulses at lightfoot speed mode 
 void ISR_MOTOR_1() { counts[0]++; }
 void ISR_MOTOR_2() { counts[1]++; }
@@ -12,19 +12,22 @@ void ISR_MOTOR_3() { counts[2]++; }
 void ISR_MOTOR_4() { counts[3]++; }
 void ISR_MOTOR_5() { counts[4]++; }
 void ISR_MOTOR_6() { counts[5]++; }
-
 int MotorPWM[6] = {0, 0, 0, 0, 0, 0};  // Current SPEED being sent to each motor from a range of 0 to 255
 const int EncoderPins[6] = {22, 23, 24, 25, 26, 27};
+
 
 // 2 ;) IMU & LOGGING GEAR
 const int chipselect =  10;
 const int ledPin = 13;
 unsigned long previousMillis = 0;
 const long interval = 10; // 10 ms = 100 Hz frequency babyyy
-
 float Roll = 0, Pitch = 0, Yaw = 0;
 
+
+
+
 void setup(){
+  
     Serial.begin(115200);  // Laptop
     Serial1.begin(115200); // IMU (WT901C)
     pinMode(ledPin, OUTPUT);
@@ -33,6 +36,7 @@ void setup(){
     for(int i = 0; i < 6; i++){
         pinMode(EncoderPins[i], INPUT_PULLUP);
     }
+
     attachInterrupt(digitalPinToInterrupt(EncoderPins[0]), ISR_MOTOR_1, RISING);
     attachInterrupt(digitalPinToInterrupt(EncoderPins[1]), ISR_MOTOR_2, RISING);
     attachInterrupt(digitalPinToInterrupt(EncoderPins[2]), ISR_MOTOR_3, RISING);
@@ -52,11 +56,17 @@ void setup(){
     Serial1.write(Rasengan, 5);
 
     // Create CSV Header for Sarah
-    File DataFile = SD.open("LightWheels_Rover.csv", FILE_WRITE);
+    DataFile = SD.open("LightWheels_Rover.csv", FILE_WRITE);
+    if(!DataFile){
+      // Panic signal in case SD fails mid-run or disconnects
+      digitalWrite(ledPin, HIGH);
+      return;
+    }
     if (DataFile){
         DataFile.println("Time_ms,Roll,Pitch,Yaw,M1_Count,M2_Count,M3_Count,M4_Count,M5_Count,M6_Count,V1_PWM,V2_PWM,V3_PWM,V4_PWM,V5_PWM,V6_PWM");
-        DataFile.close();
+      //  DataFile.close();
     }   
+
 }
 
 void loop(){
@@ -67,7 +77,7 @@ void loop(){
 
     // The 100 Hz Heartbeat DRUMS OF LIBERATION: Log every 10 ms
     if (currentMillis - previousMillis >= interval){
-        previousMillis = currentMillis;
+        previousMillis += interval;
         LogData(currentMillis);
     }
  }
@@ -90,13 +100,25 @@ void ReadIMU() {
             Pitch = (float)pRaw / 32768.0 * 180.0;
             Yaw = (float)yRaw / 32768.0 * 180.0;
 
+            if (abs(Roll) > 180 || abs(Pitch) > 180 || abs(Yaw) > 180){
+              return;
+            }
+
         } 
      }
    }
 }
 
 void LogData(unsigned long TimeStamp) {
-  File DataFile =  SD.open("LightWheels_Rover.csv", FILE_WRITE);
+    
+    long Safe_Encoder_Counts[6];
+    noInterrupts();
+    for(int i = 0; i < 6; i++){
+        Safe_Encoder_Counts[i] = counts[i];
+    }
+    interrupts();
+
+
   if (DataFile) {
      digitalWrite(ledPin, HIGH);  // GREEN LIGHT: LOGGING ACTIVE!
 
@@ -107,35 +129,58 @@ void LogData(unsigned long TimeStamp) {
 
      // Log all 6 encoder counts
      for(int i = 0; i < 6; i++){
-        DataFile.print(counts[i]);
+        DataFile.print(Safe_Encoder_Counts[i]);
         DataFile.print(",");             // a comma to seperate data
       }
 
      // Log THE PWM / Voltage INPUTS FOR ALL 6 motors
      for(int i = 0; i < 6; i++){
-         DataFile.print(MotorPWM[i]);
-         if(i<5) DataFile.print(",");
+        DataFile.print(MotorPWM[i]);
+        if(i<5) DataFile.print(",");
      }
 
      DataFile.println();
-     DataFile.close();
-     digitalWrite(ledPin, LOW);         // LIGHT OFF: SD ERROR!
+     //DataFile.close();
+     digitalWrite(ledPin, LOW);         // LIGHT OFF: logged!
   } 
-  Serial.print("Time: ");
-  Serial.print(timestamp);
-  Serial.print(" | R: ");
-  Serial.print(Roll);
-  Serial.print(" | P: ");
-  Serial.print(Pitch);
-  Serial.print(" | Y: ");
-  Serial.print(Yaw);  
-
-  Serial.print("M1: ");
-  Serial.print(counts[0]);
-  Serial.print(" | M2: ");
-  Serial.print(counts[1]);
-  Serial.print(" | M3: ");
-  Serial.print(counts[2]);
  
+    static unsigned long lastClose = 0;
+
+    if (TimeStamp - lastClose >= 1000){  // every 1 sec
+      if (DataFile){
+        DataFile.flush();
+      }
+      lastClose = TimeStamp;
+    }
+ 
+ 
+ static int chill_serial_bro = 0;
+ chill_serial_bro++;
+
+ if(chill_serial_bro >= 10){               // every 100 ms to prevent spam printing lol 
+    chill_serial_bro = 0;
+    Serial.print("M1: ");
+    Serial.print(Safe_Encoder_Counts[0]);
+    Serial.print("   |   M2: ");
+    Serial.print(Safe_Encoder_Counts[1]);
+    Serial.print("   |   M3: ");
+    Serial.print(Safe_Encoder_Counts[2]);
+    Serial.print("   |   M4: ");
+    Serial.print(Safe_Encoder_Counts[3]);
+    Serial.print("   |   M5: ");
+    Serial.print(Safe_Encoder_Counts[4]);
+    Serial.print("   |   M6: ");
+    Serial.print(Safe_Encoder_Counts[5]);
+    Serial.println();       // new line
+    /*Serial.print("Time: ");
+    Serial.print(Timestamp);
+    Serial.print(" | R: ");
+    Serial.print(Roll);
+    Serial.print(" | P: ");
+    Serial.print(Pitch);
+    Serial.print(" | Y: ");
+    Serial.print(Yaw);  
+  */
+ }
 
 }
