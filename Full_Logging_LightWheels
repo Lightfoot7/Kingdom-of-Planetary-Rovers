@@ -98,7 +98,7 @@ void ReadIMU() {
 void LogData(unsigned long TimeStamp) {
   File DataFile =  SD.open("LightWheels_Rover.csv", FILE_WRITE);
   if (DataFile) {
-     digitalWrite(LedPin, HIGH);  // GREEN LIGHT: LOGGING ACTIVE!
+     digitalWrite(ledPin, HIGH);  // GREEN LIGHT: LOGGING ACTIVE!
 
      DataFile.print(TimeStamp); DataFile.print(",");
      DataFile.print(Roll); DataFile.print(",");
