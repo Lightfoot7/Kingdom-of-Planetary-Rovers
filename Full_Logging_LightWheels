@@ -120,5 +120,22 @@ void LogData(unsigned long TimeStamp) {
      DataFile.println();
      DataFile.close();
      digitalWrite(ledPin, LOW);         // LIGHT OFF: SD ERROR!
-    } 
+  } 
+  Serial.print("Time: ");
+  Serial.print(timestamp);
+  Serial.print(" | R: ");
+  Serial.print(Roll);
+  Serial.print(" | P: ");
+  Serial.print(Pitch);
+  Serial.print(" | Y: ");
+  Serial.print(Yaw);  
+
+  Serial.print("M1: ");
+  Serial.print(counts[0]);
+  Serial.print(" | M2: ");
+  Serial.print(counts[1]);
+  Serial.print(" | M3: ");
+  Serial.print(counts[2]);
+ 
+
 }
