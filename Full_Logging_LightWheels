@@ -2,21 +2,74 @@
 #include <SD.h>  // SD card library
 File DataFile; // global file object so all functions can write to it
 
+// ENCODER PINS ;0
+#define Wheel_A_Channel_A 50  
+#define Wheel_A_Channel_B 51
+#define Wheel_B_Channel_A 3 
+#define Wheel_B_Channel_B 4  
+#define Wheel_C_Channel_A 5  
+#define Wheel_C_Channel_B 6  
+#define Wheel_D_Channel_A 7  
+#define Wheel_D_Channel_B 8  
+#define Wheel_E_Channel_A 9  
+#define Wheel_E_Channel_B 11      // NO PIN 10 HEYA
+#define Wheel_F_Channel_A 12
+#define Wheel_F_Channel_B 13
+
+// IMU PINS ;)
+#define rx 17
+#define tx 18
+
 // 1 :) ENCODER HAKI (6 MOTORS)
 // use volatile so brain processor sees every tiny movement instantly by checking the pins hardware since physcial changes happen
 volatile long counts[6] = {0, 0, 0, 0, 0, 0};  // Stores pulse counts for 6 encoders 
 
-// Interrupt ISR Functions so it makes it count pulses at lightfoot speed mode 
-void ISR_MOTOR_1() { counts[0]++; } //Each ISR runs when encoder signal changes, Every trigger = +1 count
-void ISR_MOTOR_2() { counts[1]++; } // i'm measuring position (pulse accumulation)
-void ISR_MOTOR_3() { counts[2]++; }
-void ISR_MOTOR_4() { counts[3]++; }
-void ISR_MOTOR_5() { counts[4]++; }
-void ISR_MOTOR_6() { counts[5]++; }
+// Interrupt ISR Functions so it makes it count pulses at lightfoot speed mode , //Each encoder signal connected to a pin, These pins will trigger interrupts
+void ISR_MOTOR_1() {   // i'm measuring position (pulse accumulation)
+  if (digitalRead(Wheel_A_Channel_A) == digitalRead(Wheel_A_Channel_B)){
+    counts[0]++;    //Each ISR runs when encoder signal changes, Every trigger = +1 count
+  } else {
+    counts[0]--;
+  }
+}
+void ISR_MOTOR_2() {
+  if (digitalRead(Wheel_B_Channel_A) == digitalRead(Wheel_B_Channel_B)){
+    counts[1]++; //Each ISR runs when encoder signal changes, Every trigger = +1 count
+  } else {
+    counts[1]--;
+  }
+}
+void ISR_MOTOR_3() {
+  if (digitalRead(Wheel_C_Channel_A) == digitalRead(Wheel_C_Channel_B)){
+    counts[2]++; //Each ISR runs when encoder signal changes, Every trigger = +1 count
+  } else {
+    counts[2]--;
+  }
+}
+void ISR_MOTOR_4() {
+  if (digitalRead(Wheel_D_Channel_A) == digitalRead(Wheel_D_Channel_B)){
+    counts[3]++; //Each ISR runs when encoder signal changes, Every trigger = +1 count
+  } else {
+    counts[3]--;
+  }
+}
+void ISR_MOTOR_5() {
+  if (digitalRead(Wheel_E_Channel_A) == digitalRead(Wheel_E_Channel_B)){
+    counts[4]++; //Each ISR runs when encoder signal changes, Every trigger = +1 count
+  } else {
+    counts[4]--;
+  }
+}
+void ISR_MOTOR_6() {
+  if (digitalRead(Wheel_F_Channel_A) == digitalRead(Wheel_F_Channel_B)){
+    counts[5]++; //Each ISR runs when encoder signal changes, Every trigger = +1 count
+  } else {
+    counts[5]--;
+  }
+}
+
 // Stores input commands (0–255) :) Used for logging later (input to output comparison)
 int MotorPWM[6] = {0, 0, 0, 0, 0, 0};  // Current SPEED being sent to each motor from a range of 0 to 255
-//Each encoder signal connected to a pin, These pins will trigger interrupts
-const int EncoderPins[6] = {2, 3, 4, 5, 6, 7};
 
 
 // 2 ;) IMU & LOGGING GEAR
@@ -38,17 +91,27 @@ void setup(){
     // LED setup
     pinMode(ledPin, OUTPUT);
 
-    // Initialise Encoders with pullups
-    for(int i = 0; i < 6; i++){//Sets pins as inputs, Enables internal pull-up resistors, Prevents floating signals
-        pinMode(EncoderPins[i], INPUT_PULLUP);
-    }
-    //Links pin to ISR, CHANGE = trigger on rising + falling edges
-    attachInterrupt(digitalPinToInterrupt(EncoderPins[0]), ISR_MOTOR_1, CHANGE);
-    attachInterrupt(digitalPinToInterrupt(EncoderPins[1]), ISR_MOTOR_2, CHANGE);
-    attachInterrupt(digitalPinToInterrupt(EncoderPins[2]), ISR_MOTOR_3, CHANGE);
-    attachInterrupt(digitalPinToInterrupt(EncoderPins[3]), ISR_MOTOR_4, CHANGE);
-    attachInterrupt(digitalPinToInterrupt(EncoderPins[4]), ISR_MOTOR_5, CHANGE);
-    attachInterrupt(digitalPinToInterrupt(EncoderPins[5]), ISR_MOTOR_6, CHANGE);
+    // Initialise Encoders with pullups + Sets pins as inputs, Enables internal pull-up resistors, Prevents floating signals
+    pinMode(Wheel_A_Channel_A, INPUT_PULLUP);    
+    pinMode(Wheel_A_Channel_B, INPUT_PULLUP);    
+    pinMode(Wheel_B_Channel_A, INPUT_PULLUP);    
+    pinMode(Wheel_B_Channel_B, INPUT_PULLUP);    
+    pinMode(Wheel_C_Channel_A, INPUT_PULLUP);    
+    pinMode(Wheel_C_Channel_B, INPUT_PULLUP);    
+    pinMode(Wheel_D_Channel_A, INPUT_PULLUP);    
+    pinMode(Wheel_D_Channel_B, INPUT_PULLUP);    
+    pinMode(Wheel_E_Channel_A, INPUT_PULLUP);    
+    pinMode(Wheel_E_Channel_B, INPUT_PULLUP);    
+    pinMode(Wheel_F_Channel_A, INPUT_PULLUP);    
+    pinMode(Wheel_F_Channel_B, INPUT_PULLUP);    
+
+    //Links pin to ISR, RISING = trigger on rising   edges_
+    attachInterrupt(digitalPinToInterrupt(Wheel_A_Channel_A), ISR_MOTOR_1, RISING); // CHANGE IS doubling resolution  BUT increasing noise sensitivity
+    attachInterrupt(digitalPinToInterrupt(Wheel_B_Channel_A), ISR_MOTOR_2, RISING);
+    attachInterrupt(digitalPinToInterrupt(Wheel_C_Channel_A), ISR_MOTOR_3, RISING);
+    attachInterrupt(digitalPinToInterrupt(Wheel_D_Channel_A), ISR_MOTOR_4, RISING);
+    attachInterrupt(digitalPinToInterrupt(Wheel_E_Channel_A), ISR_MOTOR_5, RISING);
+    attachInterrupt(digitalPinToInterrupt(Wheel_F_Channel_A), ISR_MOTOR_6, RISING);
 
     // Initialise SD card
     if(!SD.begin(chipselect)){
