@@ -20,51 +20,51 @@ File DataFile; // global file object so all functions can write to it
 #define rx 17
 #define tx 18
 
-// 1 :) ENCODER HAKI (6 MOTORS)
+// 1 XD ENCODER HAKI (6 MOTORS)
 // use volatile so brain processor sees every tiny movement instantly by checking the pins hardware since physcial changes happen
 volatile long counts[6] = {0, 0, 0, 0, 0, 0};  // Stores pulse counts for 6 encoders 
 
 // Interrupt ISR Functions so it makes it count pulses at lightfoot speed mode , //Each encoder signal connected to a pin, These pins will trigger interrupts
 void ISR_MOTOR_1() {   // i'm measuring position (pulse accumulation)
   if (digitalRead(Wheel_A_Channel_A) == digitalRead(Wheel_A_Channel_B)){
-    counts[0]++;    //Each ISR runs when encoder signal changes, Every trigger = +1 count
+    counts[0]--; //Each ISR runs when encoder signal changes, Every trigger = +1 count
   } else {
-    counts[0]--;
+    counts[0]++;
   }
 }
 void ISR_MOTOR_2() {
   if (digitalRead(Wheel_B_Channel_A) == digitalRead(Wheel_B_Channel_B)){
-    counts[1]++; //Each ISR runs when encoder signal changes, Every trigger = +1 count
+    counts[1]--; //Each ISR runs when encoder signal changes, Every trigger = +1 count
   } else {
-    counts[1]--;
+    counts[1]++;
   }
 }
 void ISR_MOTOR_3() {
   if (digitalRead(Wheel_C_Channel_A) == digitalRead(Wheel_C_Channel_B)){
-    counts[2]++; //Each ISR runs when encoder signal changes, Every trigger = +1 count
+    counts[2]--; //Each ISR runs when encoder signal changes, Every trigger = +1 count
   } else {
-    counts[2]--;
+    counts[2]++;
   }
 }
 void ISR_MOTOR_4() {
   if (digitalRead(Wheel_D_Channel_A) == digitalRead(Wheel_D_Channel_B)){
-    counts[3]++; //Each ISR runs when encoder signal changes, Every trigger = +1 count
+    counts[3]--; //Each ISR runs when encoder signal changes, Every trigger = +1 count
   } else {
-    counts[3]--;
+    counts[3]++;
   }
 }
 void ISR_MOTOR_5() {
   if (digitalRead(Wheel_E_Channel_A) == digitalRead(Wheel_E_Channel_B)){
-    counts[4]++; //Each ISR runs when encoder signal changes, Every trigger = +1 count
+    counts[4]--; //Each ISR runs when encoder signal changes, Every trigger = +1 count
   } else {
-    counts[4]--;
+    counts[4]++;
   }
 }
 void ISR_MOTOR_6() {
   if (digitalRead(Wheel_F_Channel_A) == digitalRead(Wheel_F_Channel_B)){
-    counts[5]++; //Each ISR runs when encoder signal changes, Every trigger = +1 count
+    counts[5]--; //Each ISR runs when encoder signal changes, Every trigger = +1 count
   } else {
-    counts[5]--;
+    counts[5]++;
   }
 }
 
