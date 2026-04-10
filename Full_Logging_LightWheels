@@ -17,8 +17,8 @@ File DataFile; // global file object so all functions can write to it
 #define Wheel_F_Channel_B 13
 
 // IMU PINS ;)
-#define rx 17
 #define tx 18
+#define rx 19
 
 // 1 XD ENCODER HAKI (6 MOTORS)
 // use volatile so brain processor sees every tiny movement instantly by checking the pins hardware since physcial changes happen
@@ -86,8 +86,8 @@ float Roll = 0, Pitch = 0, Yaw = 0;
 
 void setup(){
   
-    Serial.begin(115200);  // Laptop
-    Serial1.begin(115200); // IMU (WT901C)
+    Serial.begin(9600);  // Laptop
+    Serial1.begin(9600); // IMU (WT901C)
     // LED setup
     pinMode(ledPin, OUTPUT);
 
@@ -122,7 +122,7 @@ void setup(){
 
     // SEND THE 100 Hz output COMMAND TO IMU (The 5-byte NINJA RASENGAN SCROLL)
     byte Rasengan[] = {0xFF, 0xAA, 0x03, 0x03, 0x00};
-    Serial1.write(Rasengan, 5);
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    Serial1.write(Rasengan, 5);
 
     // Create CSV Header for Sarah
     DataFile = SD.open("LightWheels_Rover.csv", FILE_WRITE);
@@ -226,7 +226,11 @@ void LogData(unsigned long TimeStamp) {
 
   if(chill_serial_bro >= 10){               // every 100 ms to prevent spam printing lol 
     chill_serial_bro = 0;
-    Serial.print("M1: ");
+    // Real-Time
+    //Serial.print("Time: ");
+    //Serial.print(Timestamp);
+    // ENCODER COUNTS
+    /*Serial.print("M1: ");
     Serial.print(Safe_Encoder_Counts[0]);
     Serial.print("   |   M2: ");
     Serial.print(Safe_Encoder_Counts[1]);
@@ -238,15 +242,15 @@ void LogData(unsigned long TimeStamp) {
     Serial.print(Safe_Encoder_Counts[4]);
     Serial.print("   |   M6: ");
     Serial.print(Safe_Encoder_Counts[5]);
-    Serial.println();       // new line
-    /*Serial.print("Time: ");
-    Serial.print(Timestamp);
-    Serial.print(" | R: ");
+    Serial.println();       // new line*/
+    // IMU ANGLES
+    Serial.print("   |   R: ");
     Serial.print(Roll);
-    Serial.print(" | P: ");
+    Serial.print("   |   P: ");
     Serial.print(Pitch);
-    Serial.print(" | Y: ");
+    Serial.print("   |   Y: ");
     Serial.print(Yaw);  
-  */
+        Serial.println();       // new line*/
+
   }
 }
