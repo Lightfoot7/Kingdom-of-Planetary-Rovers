@@ -1,26 +1,31 @@
-#include <SPI.h>
-#include <SD.h>
-File DataFile; // MAKE FILE GLOBAL
+#include <SPI.h>  // needed for SD card communication
+#include <SD.h>  // SD card library
+File DataFile; // global file object so all functions can write to it
 
 // 1 :) ENCODER HAKI (6 MOTORS)
-// use volatile so brain processor sees every tiny movement instantly
-volatile long counts[6] = {0, 0, 0, 0, 0, 0};
+// use volatile so brain processor sees every tiny movement instantly by checking the pins hardware since physcial changes happen
+volatile long counts[6] = {0, 0, 0, 0, 0, 0};  // Stores pulse counts for 6 encoders 
+
 // Interrupt ISR Functions so it makes it count pulses at lightfoot speed mode 
-void ISR_MOTOR_1() { counts[0]++; }
-void ISR_MOTOR_2() { counts[1]++; }
+void ISR_MOTOR_1() { counts[0]++; } //Each ISR runs when encoder signal changes, Every trigger = +1 count
+void ISR_MOTOR_2() { counts[1]++; } // i'm measuring position (pulse accumulation)
 void ISR_MOTOR_3() { counts[2]++; }
 void ISR_MOTOR_4() { counts[3]++; }
 void ISR_MOTOR_5() { counts[4]++; }
 void ISR_MOTOR_6() { counts[5]++; }
+// Stores input commands (0–255) :) Used for logging later (input to output comparison)
 int MotorPWM[6] = {0, 0, 0, 0, 0, 0};  // Current SPEED being sent to each motor from a range of 0 to 255
+//Each encoder signal connected to a pin, These pins will trigger interrupts
 const int EncoderPins[6] = {2, 3, 4, 5, 6, 7};
 
 
 // 2 ;) IMU & LOGGING GEAR
 const int chipselect =  10;
-const int ledPin = 13;
+const int ledPin = 13; // Status LED
+// Timing system, Logs every 10 ms → 100 Hz
 unsigned long previousMillis = 0;
 const long interval = 10; // 10 ms = 100 Hz frequency babyyy
+// IMU orientation values
 float Roll = 0, Pitch = 0, Yaw = 0;
 
 
@@ -30,13 +35,14 @@ void setup(){
   
     Serial.begin(115200);  // Laptop
     Serial1.begin(115200); // IMU (WT901C)
+    // LED setup
     pinMode(ledPin, OUTPUT);
 
     // Initialise Encoders with pullups
-    for(int i = 0; i < 6; i++){
+    for(int i = 0; i < 6; i++){//Sets pins as inputs, Enables internal pull-up resistors, Prevents floating signals
         pinMode(EncoderPins[i], INPUT_PULLUP);
     }
-
+    //Links pin to ISR, CHANGE = trigger on rising + falling edges
     attachInterrupt(digitalPinToInterrupt(EncoderPins[0]), ISR_MOTOR_1, CHANGE);
     attachInterrupt(digitalPinToInterrupt(EncoderPins[1]), ISR_MOTOR_2, CHANGE);
     attachInterrupt(digitalPinToInterrupt(EncoderPins[2]), ISR_MOTOR_3, CHANGE);
@@ -46,34 +52,32 @@ void setup(){
 
     // Initialise SD card
     if(!SD.begin(chipselect)){
-        while (1){ // SOS Flash if SD fails 
+        while (1){ // Infinite SOS Flash if SD fails to indicate errors
             digitalWrite(ledPin, HIGH); delay(100); digitalWrite(ledPin, LOW); delay(100);
         }   
     }
 
-    // SEND THE 100 Hz COMMAND TO IMU (The 5-byte NINJA RASENGAN SCROLL)
+    // SEND THE 100 Hz output COMMAND TO IMU (The 5-byte NINJA RASENGAN SCROLL)
     byte Rasengan[] = {0xFF, 0xAA, 0x03, 0x03, 0x00};
     Serial1.write(Rasengan, 5);
 
     // Create CSV Header for Sarah
     DataFile = SD.open("LightWheels_Rover.csv", FILE_WRITE);
-    if(!DataFile){
-      // Panic signal in case SD fails mid-run or disconnects
+    // IF FAIL, Panic signal in case SD fails mid-run or disconnects
+    if(!DataFile){ 
       digitalWrite(ledPin, HIGH);
       return;
     }
-    if (DataFile){
+    // IF SUCCESS, Writes header row
+    if (DataFile){ 
         DataFile.println("Time_ms,Roll,Pitch,Yaw,M1_Count,M2_Count,M3_Count,M4_Count,M5_Count,M6_Count,V1_PWM,V2_PWM,V3_PWM,V4_PWM,V5_PWM,V6_PWM");
-      //  DataFile.close();
     }   
 
 }
 
 void loop(){
-    unsigned long currentMillis = millis();
-
-    // Always listen for IMU data in the background
-    ReadIMU();
+    unsigned long currentMillis = millis(); //Time tracking
+    ReadIMU(); // Always listen for IMU data in the background
 
     // The 100 Hz Heartbeat DRUMS OF LIBERATION: Log every 10 ms
     if (currentMillis - previousMillis >= interval){
@@ -83,81 +87,81 @@ void loop(){
  }
 
 void ReadIMU() {
-    // Check if we have a full 11-byte packet waiting
+    // Wait for/Check if we have a full 11-byte packet
     if (Serial1.available() >= 11){
-        if (Serial1.read() == 0x55){ // Header
+        if (Serial1.read() == 0x55){ // Check header
             byte type = Serial1.read();
-            if (type == 0x53) { // Euler Angles
-            int16_t rRaw = (Serial1.read() | (Serial1.read() << 8));
-            int16_t pRaw = (Serial1.read() | (Serial1.read() << 8));
-            int16_t yRaw = (Serial1.read() | (Serial1.read() << 8));
+            if (type == 0x53) { // Means Euler angles
+                // Extract raw data, reads two bytes from Serial1 and combines them into a single 16‑bit integer (int16_t)
+                int16_t rRaw = (Serial1.read() | (Serial1.read() << 8));
+                // Serial1.read() returns one byte (0–255). The first read() becomes the low byte.
+                int16_t pRaw = (Serial1.read() | (Serial1.read() << 8));
+                //The second read() is shifted left 8 bits (<< 8), making it the high byte.the | (bitwise OR) combines them into a single 16‑bit value.
+                int16_t yRaw = (Serial1.read() | (Serial1.read() << 8)); // This is little‑endian byte order (low byte first, high byte second).
 
-            // Discard temperature and checksum
-            for(int i=0; i<3; i++) Serial1.read();
+                // Discard temperature and checksum, the last 3 bytes i think 
+                for(int i=0; i<3; i++) Serial1.read();
 
-            // Convert to human degrees
-            Roll = (float)rRaw / 32768.0 * 180.0;
-            Pitch = (float)pRaw / 32768.0 * 180.0;
-            Yaw = (float)yRaw / 32768.0 * 180.0;
-
-            if (abs(Roll) > 180 || abs(Pitch) > 180 || abs(Yaw) > 180){
-              return;
-            }
-
-        } 
-     }
-   }
-}
+                // Convert to human degrees
+                Roll = (float)rRaw / 32768.0 * 180.0;
+                Pitch = (float)pRaw / 32768.0 * 180.0;
+                Yaw = (float)yRaw / 32768.0 * 180.0;
+                
+                //Reject invalid data
+                if (abs(Roll) > 180 || abs(Pitch) > 180 || abs(Yaw) > 180){
+                  return;
+                }
+              } 
+          }
+      }
+  }
 
 void LogData(unsigned long TimeStamp) {
-    
     long Safe_Encoder_Counts[6];
+    // Prevents ISR from modifying data mid-copy
     noInterrupts();
     for(int i = 0; i < 6; i++){
         Safe_Encoder_Counts[i] = counts[i];
     }
     interrupts();
 
+    if (DataFile) {
+        digitalWrite(ledPin, HIGH);  // GREEN LIGHT: LOGGING ACTIVE!
+        //LOG DATA WOHOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO
+        DataFile.print(TimeStamp); DataFile.print(",");
+        DataFile.print(Roll); DataFile.print(",");
+        DataFile.print(Pitch); DataFile.print(",");
+        DataFile.print(Yaw); DataFile.print(",");
 
-  if (DataFile) {
-     digitalWrite(ledPin, HIGH);  // GREEN LIGHT: LOGGING ACTIVE!
+        // Loop for encoder values: Log all 6 encoder counts
+        for(int i = 0; i < 6; i++){
+            DataFile.print(Safe_Encoder_Counts[i]);
+            DataFile.print(",");             // a comma to seperate data
+        }
 
-     DataFile.print(TimeStamp); DataFile.print(",");
-     DataFile.print(Roll); DataFile.print(",");
-     DataFile.print(Pitch); DataFile.print(",");
-     DataFile.print(Yaw); DataFile.print(",");
-
-     // Log all 6 encoder counts
-     for(int i = 0; i < 6; i++){
-        DataFile.print(Safe_Encoder_Counts[i]);
-        DataFile.print(",");             // a comma to seperate data
-      }
-
-     // Log THE PWM / Voltage INPUTS FOR ALL 6 motors
-     for(int i = 0; i < 6; i++){
-        DataFile.print(MotorPWM[i]);
-        if(i<5) DataFile.print(",");
-     }
-
-     DataFile.println();
-     //DataFile.close();
-     digitalWrite(ledPin, LOW);         // LIGHT OFF: logged!
-  } 
- 
+        // Loop for PWM values: Log THE PWM / Voltage INPUTS FOR ALL 6 motors
+        for(int i = 0; i < 6; i++){
+            DataFile.print(MotorPWM[i]);
+            if(i<5) DataFile.print(",");
+        }
+        // Finish row
+        DataFile.println();
+        digitalWrite(ledPin, LOW);   // LIGHT OFF: logged!
+    } 
+    
+    // SD card flushing
     static unsigned long lastClose = 0;
-
     if (TimeStamp - lastClose >= 1000){  // every 1 sec
-      if (DataFile){
-        DataFile.flush();
-      }
-      lastClose = TimeStamp;
+        if (DataFile){
+          DataFile.flush();  // Prevents data loss if power cuts
+        }
+        lastClose = TimeStamp;
     }
- 
- 
- static int chill_serial_bro = 0;
- chill_serial_bro++;
 
- if(chill_serial_bro >= 10){               // every 100 ms to prevent spam printing lol 
+    static int chill_serial_bro = 0;
+    chill_serial_bro++;
+
+  if(chill_serial_bro >= 10){               // every 100 ms to prevent spam printing lol 
     chill_serial_bro = 0;
     Serial.print("M1: ");
     Serial.print(Safe_Encoder_Counts[0]);
@@ -181,6 +185,5 @@ void LogData(unsigned long TimeStamp) {
     Serial.print(" | Y: ");
     Serial.print(Yaw);  
   */
- }
-
+  }
 }
