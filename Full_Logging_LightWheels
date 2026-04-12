@@ -24,6 +24,10 @@ File DataFile; // global file object so all functions can write to it
 // use volatile so brain processor sees every tiny movement instantly by checking the pins hardware since physcial changes happen
 volatile long counts[6] = {0, 0, 0, 0, 0, 0};  // Stores pulse counts for 6 encoders 
 
+// Add Global Variable
+unsigned long startTime = 0;
+bool started = false;
+
 // Interrupt ISR Functions so it makes it count pulses at lightfoot speed mode , //Each encoder signal connected to a pin, These pins will trigger interrupts
 void ISR_MOTOR_1() {   // i'm measuring position (pulse accumulation)
   if (digitalRead(Wheel_A_Channel_A) == digitalRead(Wheel_A_Channel_B)){
@@ -139,14 +143,49 @@ void setup(){
 }
 
 void loop(){
-    unsigned long currentMillis = millis(); //Time tracking
-    ReadIMU(); // Always listen for IMU data in the background
+    unsigned long currentMillis = millis();     //Time tracking
+
+    // Start Timer ONE TIME
+    if (!started){
+        startTime = currentMillis;
+        started = true;
+    }
+
+    // SUSUMEEE! FORWARD MOTION CONTROL! TATAKEE! KEEP MOVING FORWARD!
+    if (currentMillis - startTime < 10000){
+        // 10 SECOND SUSUMEEEEE FORWARD
+        for (int i = 0; i < 6; i++) {
+            MotorPWM[i] =120;   // forward SPEEEEED "could be adjusted from 80-180"
+        }
+    }
+    else {
+        // stop motors after 10 secando
+        for (int i =0; i<6; i++){
+            MotorPWM[i] = 0;
+        }
+    }
+    
+    // Always listen for IMU data in the background
+    ReadIMU();       
 
     // The 100 Hz Heartbeat DRUMS OF LIBERATION: Log every 10 ms
     if (currentMillis - previousMillis >= interval){
         previousMillis += interval;
         LogData(currentMillis);
     }
+
+  // CALCULATE VOLTAGE_IN FROM PWM
+  float supplyVoltage = 7.0;
+  for(int i = 0; i < 6; i++){
+      float motorVoltage = (MotorPWM[i] / 255.0) * supplyVoltage;
+      // PRINT PWM
+      Serial.print("   |   PWM: ");
+      Serial.print(MotorPWM[i]);
+      Serial.print(" ");
+      // VOLTAGE_IN MOTORS
+      Serial.print("    |   Motor_Voltage: ");
+      Serial.print(motorVoltage);
+   }
  }
 
 void ReadIMU() {
@@ -203,10 +242,17 @@ void LogData(unsigned long TimeStamp) {
         }
 
         // Loop for PWM values: Log THE PWM / Voltage INPUTS FOR ALL 6 motors
+        float supplyVoltage = 7.0;
         for(int i = 0; i < 6; i++){
             DataFile.print(MotorPWM[i]);
-            if(i<5) DataFile.print(",");
+            DataFile.print(",");
         }
+        for(int i = 0; i < 6; i++){
+            float motorVoltage = (MotorPWM[i] / 255.0) * supplyVoltage;
+            DataFile.print(motorVoltage);
+            if(i < 5) DataFile.print(",");
+        }
+
         // Finish row
         DataFile.println();
         digitalWrite(ledPin, LOW);   // LIGHT OFF: logged!
@@ -227,8 +273,8 @@ void LogData(unsigned long TimeStamp) {
   if(chill_serial_bro >= 10){               // every 100 ms to prevent spam printing lol 
     chill_serial_bro = 0;
     // Real-Time
-    //Serial.print("Time: ");
-    //Serial.print(Timestamp);
+    Serial.print("  |  Time: ");
+    Serial.print(TimeStamp);
     // ENCODER COUNTS
     /*Serial.print("M1: ");
     Serial.print(Safe_Encoder_Counts[0]);
@@ -250,7 +296,7 @@ void LogData(unsigned long TimeStamp) {
     Serial.print(Pitch);
     Serial.print("   |   Y: ");
     Serial.print(Yaw);  
-        Serial.println();       // new line*/
+    Serial.println();       // new line*/
 
   }
 }
