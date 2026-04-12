@@ -20,13 +20,25 @@ File DataFile; // global file object so all functions can write to it
 #define tx 18
 #define rx 19
 
-// 1 XD ENCODER HAKI (6 MOTORS)
+// 1 XD: ENCODER HAKI (6 MOTORS)
 // use volatile so brain processor sees every tiny movement instantly by checking the pins hardware since physcial changes happen
 volatile long counts[6] = {0, 0, 0, 0, 0, 0};  // Stores pulse counts for 6 encoders 
 
+// 2 XD: MOTOR HAKI
+int PWM_Channel[6] = {0,1,2,3,5,6} // chA to chF
 // Add Global Variable
 unsigned long startTime = 0;
 bool started = false;
+
+// CONVERT MOTOR PWM TO HARDWARE PWM
+void ApplyMotorPWM(){
+    for (int i =0; i<^; i++){
+        //Convert 0-255 to 0-1200 (BUT INVERTED!!!!!!!!!!!!)
+        int DUTY = map(MotorPWM[i], 0, 255, 1200, 0);
+
+        PWMC_SetDutyCycle(PWM, PWM_Channel[i], DUTY);
+    }
+}
 
 // Interrupt ISR Functions so it makes it count pulses at lightfoot speed mode , //Each encoder signal connected to a pin, These pins will trigger interrupts
 void ISR_MOTOR_1() {   // i'm measuring position (pulse accumulation)
