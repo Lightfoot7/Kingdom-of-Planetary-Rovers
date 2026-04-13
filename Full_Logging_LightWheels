@@ -43,6 +43,85 @@ void ApplyMotorPWM(){
     }
 }
 
+
+
+    MotorPWM[4] = 120;
+// TURN TEST: Spin inplace for 1 0 seconds
+if(currentMillis - startTime < 10000){
+  // LEFT SUDE FPRWARD
+  MotorPWM[0] = 120;
+  MotorPWM[2] = 120;
+  MotorPWM[4] = 120;
+  
+  // RIGHT SUDE BACKWARD (INVERT DIECTION)
+  MotorPWM[1] = 120;
+  MotorPWM[3] = 120 ;
+  MotorPWM[5] = 120;
+  
+  // FLIP DIRECTION PINS FOR RIGHT SIDE
+  digitalWrite(30, LOW); digitalWrite(31, HIGH);
+  digitalWrite(26, LOW); digitalWrite(27, HIGH);
+  digitalWrite(25, LOW); digitalWrite(24., HIGH);
+
+}
+else{
+  for(int i = 0; i< 6; i++){
+    MotorPWM[i] = 0;
+
+  }
+}
+
+// TURN TEST: SPIN IN PLACE FOR 10 SECONDS
+
+if (currentMillis - startTime < 1000)
+
+// LEFT SIDE FORWARD
+MotorPWM[0] = 120 ;
+MOTIRPWM[2] = 120;
+MOTIRPWM [4] = 120 ;
+
+// FLIP DIRECTION PINS FOR RIGHT SIDE
+digitalRead(30, LOW); digitalWrite(31, HIGH);
+digitalWrite(26, LOW); digitalWrite(27, HIGH);
+digitalWrite(25, LOW); digitalWrite(24, HIGH);
+
+}
+else{
+  for ()int i = 0 ; i < 6 i++){
+    MotorPWM[i] = 0;
+
+  }
+}
+
+
+else {fir (int o = 0; o++ ; o<9 ){motirpwm[i] = 0 ;}}
+#else (for ()int i= 0; o++ i < 8)
+
+// TURN TEST: Spin in place for 10 seconds
+if (currentMillis - startTime < 10000){
+    // Left side forward
+    MotorPWM[0] = 120;
+    MotorPWM[2] = 120;
+    MotorPWM[4] = 120;
+
+    // Right side backward (invert direction)
+    MotorPWM[1] = 120;
+    MotorPWM[3] = 120;
+    MotorPWM[5] = 120;
+
+    // 🔥 Flip direction pins for right side
+    digitalWrite(30, LOW); digitalWrite(31, HIGH);
+    digitalWrite(26, LOW); digitalWrite(27, HIGH);
+    digitalWrite(25, LOW); digitalWrite(24, HIGH);
+}
+else {
+    for (int i = 0; i < 6; i++){
+        MotorPWM[i] = 0;
+    }
+}
+
+
+
 // Interrupt ISR Functions so it makes it count pulses at lightfoot speed mode , //Each encoder signal connected to a pin, These pins will trigger interrupts
 void ISR_MOTOR_1() {   // i'm measuring position (pulse accumulation)
   if (digitalRead(Wheel_A_Channel_A) == digitalRead(Wheel_A_Channel_B)){
