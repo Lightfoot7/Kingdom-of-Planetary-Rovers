@@ -25,16 +25,19 @@ File DataFile; // global file object so all functions can write to it
 volatile long counts[6] = {0, 0, 0, 0, 0, 0};  // Stores pulse counts for 6 encoders 
 
 // 2 XD: MOTOR HAKI
-int PWM_Channel[6] = {0,1,2,3,5,6} // chA to chF
+int PWM_Channel[6] = {0,1,2,3,5,6}; // chA to chF
 // Add Global Variable
 unsigned long startTime = 0;
 bool started = false;
 
+// Stores input commands (0–255) :) Used for logging later (input to output comparison)
+int MotorPWM[6] = {0, 0, 0, 0, 0, 0};  // Current SPEED being sent to each motor from a range of 0 to 255
+
 // CONVERT MOTOR PWM TO HARDWARE PWM
 void ApplyMotorPWM(){
-    for (int i =0; i<^; i++){
+    for (int i =0; i<6; i++){
         //Convert 0-255 to 0-1200 (BUT INVERTED!!!!!!!!!!!!)
-        int DUTY = map(MotorPWM[i], 0, 255, 1200, 0);
+        int DUTY = (int) map(MotorPWM[i], 0, 255, 1200, 0);  // cuz map returns long
 
         PWMC_SetDutyCycle(PWM, PWM_Channel[i], DUTY);
     }
@@ -84,9 +87,6 @@ void ISR_MOTOR_6() {
   }
 }
 
-// Stores input commands (0–255) :) Used for logging later (input to output comparison)
-int MotorPWM[6] = {0, 0, 0, 0, 0, 0};  // Current SPEED being sent to each motor from a range of 0 to 255
-
 
 // 2 ;) IMU & LOGGING GEAR
 const int chipselect =  10;
@@ -98,6 +98,30 @@ const long interval = 10; // 10 ms = 100 Hz frequency babyyy
 float Roll = 0, Pitch = 0, Yaw = 0;
 
 
+void SetPin(uint8_t pin){
+  PIO_Configure(g_APinDescription[pin].pPort,
+                PIO_PERIPH_B,
+                g_APinDescription[pin].ulPin,
+                g_APinDescription[pin].ulPinConfiguration);
+}
+
+void setPWM(int channel) {
+  pmc_enable_periph_clk(PWM_INTERFACE_ID);
+  PWMC_ConfigureClocks(42000000, 0, 84000000);
+  PWMC_ConfigureChannelExt(PWM,
+                              channel,
+                              PWM_CMR_CPRE_CLKA,
+                              0,
+                              0,
+                              0,
+                              PWM_CMR_DTE,
+                              0,
+                              0);
+  PWMC_SetPeriod(PWM, channel, 1200);
+  PWMC_SetDutyCycle(PWM, channel, 600);
+  PWMC_SetDeadTime(PWM, channel, 42, 42);
+  PWMC_EnableChannel(PWM, channel);
+}
 
 
 void setup(){
@@ -128,6 +152,39 @@ void setup(){
     attachInterrupt(digitalPinToInterrupt(Wheel_D_Channel_A), ISR_MOTOR_4, RISING);
     attachInterrupt(digitalPinToInterrupt(Wheel_E_Channel_A), ISR_MOTOR_5, RISING);
     attachInterrupt(digitalPinToInterrupt(Wheel_F_Channel_A), ISR_MOTOR_6, RISING);
+
+    // FRONT LIGHTWHEEELS
+    pinMode(30, OUTPUT); pinMode(31, OUTPUT);
+    pinMode(32, OUTPUT); pinMode(33, OUTPUT);
+    digitalWrite(30, HIGH); digitalWrite(31, LOW);
+    digitalWrite(32, HIGH); digitalWrite(33, LOW);
+      
+    // MIDDLE LIGHTWHEEELS
+    pinMode(26, OUTPUT); pinMode(27, OUTPUT);
+    pinMode(28, OUTPUT); pinMode(29, OUTPUT);
+    digitalWrite(26, HIGH); digitalWrite(27, LOW);
+    digitalWrite(28, HIGH); digitalWrite(29, LOW);
+        
+    // REAR LIGHTWHEEEEELS
+    pinMode(25, OUTPUT); pinMode(24, OUTPUT);
+    pinMode(23, OUTPUT); pinMode(22, OUTPUT);
+    digitalWrite(25, HIGH); digitalWrite(24, LOW);
+    digitalWrite(23, HIGH); digitalWrite(22, LOW);
+
+    SetPin(35);
+    SetPin(37);
+    SetPin(39);
+    SetPin(41);
+    SetPin(44);
+    SetPin(45);
+
+    setPWM(0);
+    setPWM(1);
+    setPWM(2);
+    setPWM(3);
+    setPWM(5);
+    setPWM(6);
+
 
     // Initialise SD card
     if(!SD.begin(chipselect)){
@@ -176,28 +233,19 @@ void loop(){
             MotorPWM[i] = 0;
         }
     }
-    
+       
+    // MOTOR VROOM VROOM
+    ApplyMotorPWM();
+
     // Always listen for IMU data in the background
-    ReadIMU();       
+    ReadIMU();    
+    
 
     // The 100 Hz Heartbeat DRUMS OF LIBERATION: Log every 10 ms
     if (currentMillis - previousMillis >= interval){
         previousMillis += interval;
         LogData(currentMillis);
     }
-
-  // CALCULATE VOLTAGE_IN FROM PWM
-  float supplyVoltage = 7.0;
-  for(int i = 0; i < 6; i++){
-      float motorVoltage = (MotorPWM[i] / 255.0) * supplyVoltage;
-      // PRINT PWM
-      Serial.print("   |   PWM: ");
-      Serial.print(MotorPWM[i]);
-      Serial.print(" ");
-      // VOLTAGE_IN MOTORS
-      Serial.print("    |   Motor_Voltage: ");
-      Serial.print(motorVoltage);
-   }
  }
 
 void ReadIMU() {
@@ -310,5 +358,18 @@ void LogData(unsigned long TimeStamp) {
     Serial.print(Yaw);  
     Serial.println();       // new line*/
 
+
+      // CALCULATE VOLTAGE_IN FROM PWM
+  float supplyVoltage = 7.0;
+  for(int i = 0; i < 6; i++){
+      float motorVoltage = (MotorPWM[i] / 255.0) * supplyVoltage;
+      // PRINT PWM
+      Serial.print("   |   PWM: ");
+      Serial.print(MotorPWM[i]);
+      Serial.print(" ");
+      // VOLTAGE_IN MOTORS
+      Serial.print("    |   Motor_Voltage: ");
+      Serial.print(motorVoltage);
+   }
   }
 }
