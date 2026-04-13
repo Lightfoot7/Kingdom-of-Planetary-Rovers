@@ -72,7 +72,6 @@ else{
 }
 
 // TURN TEST: SPIN IN PLACE FOR 10 SECONDS
-
 if (currentMillis - startTime < 1000)
 
 // LEFT SIDE FORWARD
@@ -93,9 +92,6 @@ else{
   }
 }
 
-
-else {fir (int o = 0; o++ ; o<9 ){motirpwm[i] = 0 ;}}
-#else (for ()int i= 0; o++ i < 8)
 
 // TURN TEST: Spin in place for 10 seconds
 if (currentMillis - startTime < 10000){
