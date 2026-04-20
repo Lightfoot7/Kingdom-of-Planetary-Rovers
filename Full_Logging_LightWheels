@@ -67,8 +67,7 @@ else{
     MotorPWM[i] = 0;
 
   }
-}
-*/
+}   */
 
 // Interrupt ISR Functions so it makes it count pulses at lightfoot speed mode , //Each encoder signal connected to a pin, These pins will trigger interrupts
 void ISR_MOTOR_1() {   // i'm measuring position (pulse accumulation)
