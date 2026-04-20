@@ -43,31 +43,6 @@ void ApplyMotorPWM(){
     }
 }
 
-/*
-// TURN TEST: Spin inplace for 10 seconds
-if(currentMillis - startTime < 10000){
-  // LEFT SiDE FPRWARD
-  MotorPWM[0] = 120;
-  MotorPWM[2] = 120;
-  MotorPWM[4] = 120;
-  
-  // RIGHT SiDE BACKWARD (INVERT DIECTION)
-  MotorPWM[1] = 120;
-  MotorPWM[3] = 120 ;
-  MotorPWM[5] = 120;
-  
-  // FLIP DIRECTION PINS FOR RIGHT SIDE
-  digitalWrite(30, LOW); digitalWrite(31, HIGH);
-  digitalWrite(26, LOW); digitalWrite(27, HIGH);
-  digitalWrite(25, LOW); digitalWrite(24., HIGH);
-
-}
-else{
-  for(int i = 0; i< 6; i++){
-    MotorPWM[i] = 0;
-
-  }
-}   */
 
 // Interrupt ISR Functions so it makes it count pulses at lightfoot speed mode , //Each encoder signal connected to a pin, These pins will trigger interrupts
 void ISR_MOTOR_1() {   // i'm measuring position (pulse accumulation)
@@ -196,7 +171,33 @@ void setup(){
     pinMode(23, OUTPUT); pinMode(22, OUTPUT);
     digitalWrite(25, HIGH); digitalWrite(24, LOW);
     digitalWrite(23, HIGH); digitalWrite(22, LOW);
+ 
+/*
+// TURN TEST: Spin inplace for 10 seconds
+if(currentMillis - startTime < 10000){
+  // LEFT SiDE FPRWARD
+  MotorPWM[0] = 120;
+  MotorPWM[2] = 120;
+  MotorPWM[4] = 120;
+  
+  // RIGHT SiDE BACKWARD (INVERT DIECTION)
+  MotorPWM[1] = 120;
+  MotorPWM[3] = 120 ;
+  MotorPWM[5] = 120;
+  
+  // FLIP DIRECTION PINS FOR RIGHT SIDE
+  digitalWrite(30, LOW); digitalWrite(31, HIGH);
+  digitalWrite(26, LOW); digitalWrite(27, HIGH);
+  digitalWrite(25, LOW); digitalWrite(24, HIGH);
 
+}
+else{
+  for(int i = 0; i< 6; i++){
+    MotorPWM[i] = 0;
+
+  }
+}   */
+ 
     SetPin(35);
     SetPin(37);
     SetPin(39);
@@ -210,7 +211,7 @@ void setup(){
     setPWM(3);
     setPWM(5);
     setPWM(6);
-
+ 
 
     // Initialise SD card
     if(!SD.begin(chipselect)){
@@ -396,6 +397,7 @@ void LogData(unsigned long TimeStamp) {
       // VOLTAGE_IN MOTORS
       Serial.print("    |   Motor_Voltage: ");
       Serial.print(motorVoltage);
+      Serial.println();
    }
   }
 }
