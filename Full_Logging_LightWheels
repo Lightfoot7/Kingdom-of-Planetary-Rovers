@@ -251,7 +251,7 @@ void loop(){
     if (currentMillis - startTime < 10000){
         // 10 SECOND SUSUMEEEEE FORWARD
         for (int i = 0; i < 6; i++) {
-            MotorPWM[i] =120;   // forward SPEEEEED "could be adjusted from 80-180"
+            MotorPWM[i] =190;   // forward SPEEEEED "could be adjusted from 80-180" 0-220
         }
     }
     else {
