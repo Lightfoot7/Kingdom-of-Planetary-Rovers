@@ -26,25 +26,40 @@ volatile long counts[6] = {0, 0, 0, 0, 0, 0};  // Stores pulse counts for 6 enco
 
 // 2 XD: MOTOR HAKI
 int PWM_Channel[6] = {0,1,2,3,5,6}; // chA to chF
-// Add Global Variable
-unsigned long startTime = 0;
-bool started = false;
-
 // Stores input commands (0–255) :) Used for logging later (input to output comparison)
 int MotorPWM[6] = {0, 0, 0, 0, 0, 0};  // Current SPEED being sent to each motor from a range of 0 to 255
 
 // CONVERT MOTOR PWM TO HARDWARE PWM
 void ApplyMotorPWM(){
     for (int i =0; i<6; i++){
-        //Convert 0-255 to 0-1200 (BUT INVERTED!!!!!!!!!!!!)
-        int DUTY = (int) map(MotorPWM[i], 0, 255, 1200, 0);  // cuz map returns long
+        //Convert 0-255 to 0-1200 (NOT INVERTED!!!!!!!!!!!!)
+        int DUTY = (int) map(MotorPWM[i], 0, 255, 0, 1200);  // cuz map returns long
 
         PWMC_SetDutyCycle(PWM, PWM_Channel[i], DUTY);
     }
 }
 
 
-// Interrupt ISR Functions so it makes it count pulses at lightfoot speed mode , //Each encoder signal connected to a pin, These pins will trigger interrupts
+// FULL QUADRATURE: uses 2 SIGNLAS SLIGHTLY OUT OF PHASE, PHASE DIFFEECNE GIVES DIRECTION
+volatile uint8_t PREVIOUS_STATE[6] = {0};    // stores LAST KNOWN STATE OF EACH ENCODER FOR ALL MOTORS
+void UPDATE_ENCODER(int i, int pinA, int pinB){
+  uint8_t A = digitalRead(pinA);  // pinA is just 1st encoder channel pin i pass in, pinB 2nd
+  uint8_t B = digitalRead(pinB);  //
+  uint8_t CURRENT_STATE = ((A<<1) | B);  // SHIFT A LEFT SO IT BECOMES MSB or WITH B BECOMES LSB
+  uint8_t combined = (PREVIOUS_STATE[i]<<2) | CURRENT_STATE; // i created a 4 bit transition (prev+current AB) so if previous =01 and current=11 then combined=0111
+
+  // STATE TRANSITION TABLE: A: 0 0 1 1  // B : 0 1 0 1 // CURRENT_STATE = 0b00, 0b01, 0b10, 0b11
+  if (combined == 0b0001 || combined == 0b0111 || combined == 0b1110 || combined == 0b1000){
+    counts[i]++;  // each encoder uses 1 of 4 states and these patterns are SUSUMEEEEEEEE
+  }
+  else if (combined == 0b0010 || combined == 0b0100 || combined == 0b1101 || combined == 0b1011){
+    counts[i]--;  // SIKE GO BACK BUDDY, these are reverse roataion as in the sequence is reversed
+  }
+  PREVIOUS_STATE[i] = CURRENT_STATE;   // update MEMORY CUZ MEXT INTERRPUT NEEDS THIS AS THE PREVIOUS, IT KEEPS TRACK OF COINTUOS MOTIONNNN
+}
+
+
+/*// Interrupt ISR Functions so it makes it count pulses at lightfoot speed mode , //Each encoder signal connected to a pin, These pins will trigger interrupts
 void ISR_MOTOR_1() {   // i'm measuring position (pulse accumulation)
   if (digitalRead(Wheel_A_Channel_A) == digitalRead(Wheel_A_Channel_B)){
     counts[0]--; //Each ISR runs when encoder signal changes, Every trigger = +1 count
@@ -87,25 +102,36 @@ void ISR_MOTOR_6() {
     counts[5]++;
   }
 }
+*/
+// Interrupt ISR Functions so it makes it count pulses at lightfoot speed mode , //Each encoder signal connected to a pin, These pins will trigger interrupts
+void ISR_MOTOR_1() {UPDATE_ENCODER(0, Wheel_A_Channel_A, Wheel_A_Channel_B);}
+void ISR_MOTOR_2() {UPDATE_ENCODER(1, Wheel_B_Channel_A, Wheel_B_Channel_B);}
+void ISR_MOTOR_3() {UPDATE_ENCODER(2, Wheel_C_Channel_A, Wheel_C_Channel_B);}
+void ISR_MOTOR_4() {UPDATE_ENCODER(3, Wheel_D_Channel_A, Wheel_D_Channel_B);}
+void ISR_MOTOR_5() {UPDATE_ENCODER(4, Wheel_E_Channel_A, Wheel_E_Channel_B);}
+void ISR_MOTOR_6() {UPDATE_ENCODER(5, Wheel_F_Channel_A, Wheel_F_Channel_B);}
 
+// Add Global Variable
+unsigned long startTime = 0;
+bool started = false;
 
 // 2 ;) IMU & LOGGING GEAR
-const int chipselect =  10;
+const int chipselect =  10;   // NOT 4
 const int ledPin = 13; // Status LED
 // Timing system, Logs every 10 ms → 100 Hz
 unsigned long previousMillis = 0;
 const long interval = 10; // 10 ms = 100 Hz frequency babyyy
-// IMU orientation values
+// IMU ANGLES WOHOOOOOOOOOOOOOOO XD
 float Roll = 0, Pitch = 0, Yaw = 0;
 
-
+// CONFIGURES PINS FOR PWM HARDWARE LOW-LEVEL STUFF
 void SetPin(uint8_t pin){
   PIO_Configure(g_APinDescription[pin].pPort,
                 PIO_PERIPH_B,
                 g_APinDescription[pin].ulPin,
                 g_APinDescription[pin].ulPinConfiguration);
 }
-
+// SETS FREQUENCY, PERIOD, DUTY CYCLE, ENABLES PWM CHANNEL
 void setPWM(int channel) {
   pmc_enable_periph_clk(PWM_INTERFACE_ID);
   PWMC_ConfigureClocks(42000000, 0, 84000000);
@@ -126,8 +152,7 @@ void setPWM(int channel) {
 
 
 void setup(){
-  
-    Serial.begin(9600);  // Laptop
+    Serial.begin(9600);  // Laptop BAUD RATE
     Serial1.begin(9600); // IMU (WT901C)
     // LED setup
     pinMode(ledPin, OUTPUT);
@@ -146,13 +171,27 @@ void setup(){
     pinMode(Wheel_F_Channel_A, INPUT_PULLUP);    
     pinMode(Wheel_F_Channel_B, INPUT_PULLUP);    
 
-    //Links pin to ISR, RISING = trigger on rising   edges_
-    attachInterrupt(digitalPinToInterrupt(Wheel_A_Channel_A), ISR_MOTOR_1, RISING); // CHANGE IS doubling resolution  BUT increasing noise sensitivity
-    attachInterrupt(digitalPinToInterrupt(Wheel_B_Channel_A), ISR_MOTOR_2, RISING);
-    attachInterrupt(digitalPinToInterrupt(Wheel_C_Channel_A), ISR_MOTOR_3, RISING);
-    attachInterrupt(digitalPinToInterrupt(Wheel_D_Channel_A), ISR_MOTOR_4, RISING);
-    attachInterrupt(digitalPinToInterrupt(Wheel_E_Channel_A), ISR_MOTOR_5, RISING);
-    attachInterrupt(digitalPinToInterrupt(Wheel_F_Channel_A), ISR_MOTOR_6, RISING);
+    PREVIOUS_STATE[0] = ((digitalRead(Wheel_A_Channel_A) << 1) | digitalRead(Wheel_A_Channel_B));
+    PREVIOUS_STATE[1] = ((digitalRead(Wheel_B_Channel_A) << 1) | digitalRead(Wheel_B_Channel_B));
+    PREVIOUS_STATE[2] = ((digitalRead(Wheel_C_Channel_A) << 1) | digitalRead(Wheel_C_Channel_B));
+    PREVIOUS_STATE[3] = ((digitalRead(Wheel_D_Channel_A) << 1) | digitalRead(Wheel_D_Channel_B));
+    PREVIOUS_STATE[4] = ((digitalRead(Wheel_E_Channel_A) << 1) | digitalRead(Wheel_E_Channel_B));
+    PREVIOUS_STATE[5] = ((digitalRead(Wheel_F_Channel_A) << 1) | digitalRead(Wheel_F_Channel_B));
+
+    //Links pin to ISR, NOT ANYMORE EVERY RISING = RUN ISR BABYYY // NOW ITS CHANGE (rising + fall)IS doubling resolution  BUT increasing noise sensitivity
+    attachInterrupt(digitalPinToInterrupt(Wheel_A_Channel_A), ISR_MOTOR_1, CHANGE); 
+    attachInterrupt(digitalPinToInterrupt(Wheel_B_Channel_A), ISR_MOTOR_2, CHANGE);
+    attachInterrupt(digitalPinToInterrupt(Wheel_C_Channel_A), ISR_MOTOR_3, CHANGE);
+    attachInterrupt(digitalPinToInterrupt(Wheel_D_Channel_A), ISR_MOTOR_4, CHANGE);
+    attachInterrupt(digitalPinToInterrupt(Wheel_E_Channel_A), ISR_MOTOR_5, CHANGE);
+    attachInterrupt(digitalPinToInterrupt(Wheel_F_Channel_A), ISR_MOTOR_6, CHANGE);
+    // ADD CHANNEL B FOR FULLL QUADRATURE BABYYY!! ACCURACY 10 BILLION PERCENT!!
+    attachInterrupt(digitalPinToInterrupt(Wheel_A_Channel_B), ISR_MOTOR_1, CHANGE); 
+    attachInterrupt(digitalPinToInterrupt(Wheel_B_Channel_B), ISR_MOTOR_2, CHANGE);
+    attachInterrupt(digitalPinToInterrupt(Wheel_C_Channel_B), ISR_MOTOR_3, CHANGE);
+    attachInterrupt(digitalPinToInterrupt(Wheel_D_Channel_B), ISR_MOTOR_4, CHANGE);
+    attachInterrupt(digitalPinToInterrupt(Wheel_E_Channel_B), ISR_MOTOR_5, CHANGE);
+    attachInterrupt(digitalPinToInterrupt(Wheel_F_Channel_B), ISR_MOTOR_6, CHANGE);
 
     // FRONT LIGHTWHEEELS
     pinMode(30, OUTPUT); pinMode(31, OUTPUT);
@@ -197,14 +236,13 @@ else{
 
   }
 }   */
- 
+ // ENABLES PWM OUTPUT
     SetPin(35);
     SetPin(37);
     SetPin(39);
     SetPin(41);
     SetPin(44);
     SetPin(45);
-
     setPWM(0);
     setPWM(1);
     setPWM(2);
@@ -212,19 +250,18 @@ else{
     setPWM(5);
     setPWM(6);
  
-
     // Initialise SD card
     if(!SD.begin(chipselect)){
-        while (1){ // Infinite SOS Flash if SD fails to indicate errors
+        while (1){ // Infinite SOS Flash MORSE CODE SO COOOOOOL DR SOTNE, if SD fails to indicate errors
             digitalWrite(ledPin, HIGH); delay(100); digitalWrite(ledPin, LOW); delay(100);
         }   
     }
 
-    // SEND THE 100 Hz output COMMAND TO IMU (The 5-byte NINJA RASENGAN SCROLL)
+    // SEND  DATA TO IMU AT THE 100 Hz (The 5-byte NINJA RASENGAN SCROLL)
     byte Rasengan[] = {0xFF, 0xAA, 0x03, 0x03, 0x00};
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     Serial1.write(Rasengan, 5);
 
-    // Create CSV Header for Sarah
+    // Create CSV Header for Sarah :)
     DataFile = SD.open("LightWheels_Rover.csv", FILE_WRITE);
     // IF FAIL, Panic signal in case SD fails mid-run or disconnects
     if(!DataFile){ 
@@ -233,12 +270,12 @@ else{
     }
     // IF SUCCESS, Writes header row
     if (DataFile){ 
-        DataFile.println("Time_ms,Roll,Pitch,Yaw,M1_Count,M2_Count,M3_Count,M4_Count,M5_Count,M6_Count,V1_PWM,V2_PWM,V3_PWM,V4_PWM,V5_PWM,V6_PWM");
+        DataFile.println("Time_ms, Roll, Pitch, Yaw, M1_Count, M2_Count, M3_Count, M4_Count, M5_Count, M6_Count, V1_PWM, V2_PWM, V3_PWM, V4_PWM, V5_PWM, V6_PWM");
     }   
-
+// ADD VOLTAGE IN ABOVE HEREEEEEEEEEEEEEEEEEEEEEE
 }
 
-void loop(){
+void loop(){     // LIKE WHILE TRUE INSIDE MAIN
     unsigned long currentMillis = millis();     //Time tracking
 
     // Start Timer ONE TIME
@@ -251,7 +288,7 @@ void loop(){
     if (currentMillis - startTime < 10000){
         // 10 SECOND SUSUMEEEEE FORWARD
         for (int i = 0; i < 6; i++) {
-            MotorPWM[i] =190;   // forward SPEEEEED "could be adjusted from 80-180" 0-220
+            MotorPWM[i] =120;   // forward SPEEEEED "could be adjusted from 0-255"
         }
     }
     else {
@@ -267,7 +304,6 @@ void loop(){
     // Always listen for IMU data in the background
     ReadIMU();    
     
-
     // The 100 Hz Heartbeat DRUMS OF LIBERATION: Log every 10 ms
     if (currentMillis - previousMillis >= interval){
         previousMillis += interval;
@@ -280,7 +316,7 @@ void ReadIMU() {
     if (Serial1.available() >= 11){
         if (Serial1.read() == 0x55){ // Check header
             byte type = Serial1.read();
-            if (type == 0x53) { // Means Euler angles
+            if (type == 0x53) { // Means Euler angles// LITTLE ENDIAN
                 // Extract raw data, reads two bytes from Serial1 and combines them into a single 16‑bit integer (int16_t)
                 int16_t rRaw = (Serial1.read() | (Serial1.read() << 8));
                 // Serial1.read() returns one byte (0–255). The first read() becomes the low byte.
@@ -291,7 +327,7 @@ void ReadIMU() {
                 // Discard temperature and checksum, the last 3 bytes i think 
                 for(int i=0; i<3; i++) Serial1.read();
 
-                // Convert to human degrees
+                // Convert to human ANGLES degrees
                 Roll = (float)rRaw / 32768.0 * 180.0;
                 Pitch = (float)pRaw / 32768.0 * 180.0;
                 Yaw = (float)yRaw / 32768.0 * 180.0;
@@ -305,6 +341,10 @@ void ReadIMU() {
       }
   }
 
+
+// VOLTAGE GOING IN MOTORS
+float supplyVoltage = 7.0;   // CHANGE 7 V  MAYBE???????
+
 void LogData(unsigned long TimeStamp) {
     long Safe_Encoder_Counts[6];
     // Prevents ISR from modifying data mid-copy
@@ -317,10 +357,10 @@ void LogData(unsigned long TimeStamp) {
     if (DataFile) {
         digitalWrite(ledPin, HIGH);  // GREEN LIGHT: LOGGING ACTIVE!
         //LOG DATA WOHOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO
-        DataFile.print(TimeStamp); DataFile.print(",");
-        DataFile.print(Roll); DataFile.print(",");
-        DataFile.print(Pitch); DataFile.print(",");
-        DataFile.print(Yaw); DataFile.print(",");
+        DataFile.print(TimeStamp); DataFile.print(",");   // CLEAN EXCEL DATA!!!!!!!!!!!!
+        DataFile.print(Roll); DataFile.print(",");  // IM SO HAPPPPPPPPPPPPPPPPY!
+        DataFile.print(Pitch); DataFile.print(",");  // FINALLYYYYYYYYYYYYYYYY
+        DataFile.print(Yaw); DataFile.print(",");    // THIS TOOK SO LONG IM HAPPPYPYPYPYPYPYPY!!!!!!
 
         // Loop for encoder values: Log all 6 encoder counts
         for(int i = 0; i < 6; i++){
@@ -329,7 +369,6 @@ void LogData(unsigned long TimeStamp) {
         }
 
         // Loop for PWM values: Log THE PWM / Voltage INPUTS FOR ALL 6 motors
-        float supplyVoltage = 7.0;
         for(int i = 0; i < 6; i++){
             DataFile.print(MotorPWM[i]);
             DataFile.print(",");
@@ -353,17 +392,19 @@ void LogData(unsigned long TimeStamp) {
         }
         lastClose = TimeStamp;
     }
+  
 
-    static int chill_serial_bro = 0;
-    chill_serial_bro++;
-
+  // PRINT BROSKI!! ;0
+  static int chill_serial_bro = 0;
+  chill_serial_bro++;
   if(chill_serial_bro >= 10){               // every 100 ms to prevent spam printing lol 
     chill_serial_bro = 0;
+
     // Real-Time
     Serial.print("  |  Time: ");
     Serial.print(TimeStamp);
     // ENCODER COUNTS
-    /*Serial.print("M1: ");
+    Serial.print("M1: ");
     Serial.print(Safe_Encoder_Counts[0]);
     Serial.print("   |   M2: ");
     Serial.print(Safe_Encoder_Counts[1]);
@@ -383,21 +424,18 @@ void LogData(unsigned long TimeStamp) {
     Serial.print(Pitch);
     Serial.print("   |   Y: ");
     Serial.print(Yaw);  
-    Serial.println();       // new line*/
-
-
-      // CALCULATE VOLTAGE_IN FROM PWM
-  float supplyVoltage = 7.0;
-  for(int i = 0; i < 6; i++){
-      float motorVoltage = (MotorPWM[i] / 255.0) * supplyVoltage;
-      // PRINT PWM
-      Serial.print("   |   PWM: ");
-      Serial.print(MotorPWM[i]);
-      Serial.print(" ");
-      // VOLTAGE_IN MOTORS
-      Serial.print("    |   Motor_Voltage: ");
-      Serial.print(motorVoltage);
-      Serial.println();
-   }
+    Serial.println();       // new line
+    // CALCULATE VOLTAGE_IN FROM PWM
+    for(int i = 0; i < 6; i++){
+        float motorVoltage = (MotorPWM[i] / 255.0) * supplyVoltage;
+        // PRINT PWM
+        Serial.print("   |   PWM: ");
+        Serial.print(MotorPWM[i]);
+        Serial.print(" ");
+        // VOLTAGE_IN MOTORS
+        Serial.print("    |   Motor_Voltage: ");
+        Serial.print(motorVoltage);
+        Serial.println();
+    }
   }
 }
