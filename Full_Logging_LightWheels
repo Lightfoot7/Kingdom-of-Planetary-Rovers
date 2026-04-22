@@ -403,6 +403,8 @@ void LogData(unsigned long TimeStamp) {
     // Real-Time
     Serial.print("  |  Time: ");
     Serial.print(TimeStamp);
+    Serial.println();
+
     // ENCODER COUNTS
     Serial.print("M1: ");
     Serial.print(Safe_Encoder_Counts[0]);
