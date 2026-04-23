@@ -307,9 +307,33 @@ void loop(){     // LIKE WHILE TRUE INSIDE MAIN
     // SUSUMEEE! FORWARD MOTION CONTROL! TATAKEE! KEEP MOVING FORWARD!
     if (currentMillis - startTime < 10000){
         // 10 SECOND SUSUMEEEEE FORWARD
-        for (int i = 0; i < 6; i++) {
-            MotorPWM[i] =120;   // forward SPEEEEED "could be adjusted from 0-255"
-        }
+        MotorPWM[0] =120;   // forward SPEEEEED "could be adjusted from 0-255"
+        MotorPWM[1] =120;   // forward SPEEEEED "could be adjusted from 0-255"
+        MotorPWM[2] =120;   // forward SPEEEEED "could be adjusted from 0-255"
+        MotorPWM[3] =120;   // forward SPEEEEED "could be adjusted from 0-255"
+        MotorPWM[4] =120;   // forward SPEEEEED "could be adjusted from 0-255"
+        MotorPWM[5] =120;   // forward SPEEEEED "could be adjusted from 0-255"
+
+       /* //TURN RIGHT
+        MotorPWM[0] =140;   //   SPEEEEED "could be adjusted from 0-255"
+        MotorPWM[2] =140;   //   SPEEEEED "could be adjusted from 0-255"
+        MotorPWM[4] =140;   //      SPEEEEED "could be adjusted from 0-255"
+        
+        MotorPWM[1] =80;   //  SPEEEEED "could be adjusted from 0-255"
+        MotorPWM[3] =80;   //   SPEEEEED "could be adjusted from 0-255"
+        MotorPWM[5] =80;   //   SPEEEEED "could be adjusted from 0-255"*/
+
+        /*
+        // SPIN IN PLACE
+        //forward
+        MotorPWM[0] =160;   //   SPEEEEED "could be adjusted from 0-255"
+        MotorPWM[2] =160;   //   SPEEEEED "could be adjusted from 0-255"
+        MotorPWM[4] =160;   //   SPEEEEED "could be adjusted from 0-255"
+        // flip direction pins so backward
+        MotorPWM[1] =160;   //   SPEEEEED "could be adjusted from 0-255"
+        MotorPWM[3] =160;   //   SPEEEEED "could be adjusted from 0-255"
+        MotorPWM[5] =160;   //   SPEEEEED "could be adjusted from 0-255"*/
+
     }
     else {
         // stop motors after 10 secando
