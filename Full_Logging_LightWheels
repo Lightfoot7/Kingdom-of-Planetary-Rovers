@@ -25,7 +25,7 @@ File DataFile; // global file object so all functions can write to it
 volatile long counts[6] = {0, 0, 0, 0, 0, 0};  // Stores pulse counts for 6 encoders 
 
 // 2 XD: MOTOR HAKI
-int PWM_Channel[6] = {0,1,2,3,5,6}; // chA to chF
+int PWM_Channel[6] = {0,1,2,3,5,6};
 // Stores input commands (0–255) :) Used for logging later (input to output comparison)
 int MotorPWM[6] = {0, 0, 0, 0, 0, 0};  // Current SPEED being sent to each motor from a range of 0 to 255
 
@@ -252,12 +252,13 @@ else{
   }
 }   */
  // ENABLES PWM OUTPUT
-SetPin(34);  // Motor A
-SetPin(35);  // Motor B
-SetPin(36);  // Motor C
-SetPin(37);  // Motor D
-SetPin(39);  // Motor E
-SetPin(41);  // Motor F
+SetPin(35);  // channel 0 -  MOTOR A EN
+SetPin(37);  // channel 1   B
+SetPin(39);  // channel 2   C
+SetPin(41);  // channel 3   D
+SetPin(34);  // channel 5   E  
+SetPin(36);  // channel 6   F
+ 
    
     setPWM(0);
     setPWM(1);
@@ -285,7 +286,7 @@ SetPin(41);  // Motor F
     }
     // IF SUCCESS, Writes header row
     if (DataFile){ 
-        DataFile.println("Time_ms, Roll, Pitch, Yaw, Ax, Ay, Az, Gx, Gy, Gz, M1_Count, M2_Count, M3_Count, M4_Count, M5_Count, M6_Count");
+        DataFile.println("Time_ms, Roll, Pitch, Yaw, Ax, Ay, Az, Gx, Gy, Gz, Wheel_A, Wheel_B, Wheel_C, Wheel_D, Wheel_E, Wheel_F");
     }   
     // ADD VOLTAGE IN ABOVE HEREEEEEEEEEEEEEEEEEEEEEE
 }
@@ -413,6 +414,12 @@ void LogData(unsigned long TimeStamp) {
         DataFile.print(Roll); DataFile.print(",");  // IM SO HAPPPPPPPPPPPPPPPPY!
         DataFile.print(Pitch); DataFile.print(",");  // FINALLYYYYYYYYYYYYYYYY
         DataFile.print(Yaw); DataFile.print(",");    // THIS TOOK SO LONG IM HAPPPYPYPYPYPYPYPY!!!!!!
+        DataFile.print(Ax); DataFile.print(",");
+        DataFile.print(Ay); DataFile.print(",");
+        DataFile.print(Az); DataFile.print(",");
+        DataFile.print(Gx); DataFile.print(",");
+        DataFile.print(Gy); DataFile.print(",");
+        DataFile.print(Gz); DataFile.print(",");
 
         /*// Loop for encoder values: Log all 6 encoder counts
         for(int i = 0; i < 6; i++){
