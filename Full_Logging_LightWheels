@@ -7,12 +7,12 @@ File DataFile; // global file object so all functions can write to it
 #define Wheel_A_Channel_B 53
 #define Wheel_B_Channel_A 50
 #define Wheel_B_Channel_B 51
-#define Wheel_C_Channel_A 48  
-#define Wheel_C_Channel_B 49
+#define Wheel_C_Channel_A 49  
+#define Wheel_C_Channel_B 48
 #define Wheel_D_Channel_A 46 
 #define Wheel_D_Channel_B 47  
-#define Wheel_E_Channel_A 44 
-#define Wheel_E_Channel_B 45      // NO PIN 10 HEYA
+#define Wheel_E_Channel_A 8
+#define Wheel_E_Channel_B 7      // NO PIN 10 HEYA
 #define Wheel_F_Channel_A 42
 #define Wheel_F_Channel_B 43
 
@@ -160,7 +160,7 @@ void setPWM(int channel) {
 
 
 void setup(){
-    Serial.begin(9600);  // Laptop BAUD RATE
+    Serial.begin(115200);  // Laptop BAUD RATE
     Serial1.begin(9600); // IMU (WT901C)
     // LED setup
     pinMode(ledPin, OUTPUT);
@@ -256,8 +256,8 @@ SetPin(35);  // channel 0 -  MOTOR A EN
 SetPin(37);  // channel 1   B
 SetPin(39);  // channel 2   C
 SetPin(41);  // channel 3   D
-SetPin(34);  // channel 5   E  
-SetPin(36);  // channel 6   F
+SetPin(44 );  // channel 5   E  
+SetPin(45 );  // channel 6   F
  
    
     setPWM(0);
