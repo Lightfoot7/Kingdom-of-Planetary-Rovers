@@ -133,7 +133,7 @@ void reverse(float duty) {
   Serial.println("Driving in Reverse");
 }
 
-void turnRight(float duty) {
+void turnLeft(float duty) {
   int trueDuty = 1200 - int(1200 * duty);
 
   // LEFT SIDE FORWARD (A, C, E)
@@ -156,11 +156,11 @@ void turnRight(float duty) {
   PWMC_SetDutyCycle(PWM, chF, trueDuty);
   digitalWrite(in1_F, LOW); digitalWrite(in2_F, HIGH);
 
-  Serial.println("Turning Right");
+  Serial.println("Turning LEFT");
 }
 
 
-void turnLeft(float duty) {
+void turnRight(float duty) {
   int trueDuty = 1200 - int(1200 * duty);
 
   // LEFT SIDE REVERSE  (A, C, E)
@@ -183,7 +183,7 @@ void turnLeft(float duty) {
   PWMC_SetDutyCycle(PWM, chF, trueDuty);
   digitalWrite(in1_F, HIGH); digitalWrite(in2_F, LOW);
 
-  Serial.println("Turning LEFT");
+  Serial.println("Turning RIGHT");
 }
 
 
@@ -309,12 +309,10 @@ void loop() {
       forward(0.85);    
   } 
   else if (currentMillis < 20000) {
-      turnRight(0.92);  
+      turnLeft(0.92);  
   }
+
   else if (currentMillis < 30000) {
-      turnLeft(0.92);    
-  } 
-  else if (currentMillis < 40000) {
       reverse(0.85);    
   }     
   else {         
