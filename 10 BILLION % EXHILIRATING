@@ -271,9 +271,19 @@ void setup() {
 void loop() {
   unsigned long currentMillis = millis();
 
-  if (currentMillis < 15000) {        // Forward for 15 seconds
-      forward(0.85);                  // Full duty (we’ll cap it safely below)
-  } else {
+  if (currentMillis < 5000) {        // Forward for 10 seconds
+      turnRight(0.92);              
+  } 
+  else if (currentMillis < 15000) {
+      forward(0.85);  
+  }
+  else if (currentMillis < 20000) {
+      turnLeft(0.92);    
+  } 
+  else if (currentMillis < 30000) {
+      reverse(0.85);    
+  }     
+  else {         
       stop();                        // Stop forever
   }
 
