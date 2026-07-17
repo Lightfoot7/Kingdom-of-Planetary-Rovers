@@ -17,31 +17,38 @@ const int ledPin = 13;
 #define rx 19
 
 // Encoders (SKIP PIN 10)
-#define whA_A 52 // Wheel A output B
-#define whA_B 53 // Wheel A output A
-#define whB_A 50 // Wheel B output B
-#define whB_B 51 // wheel B output A
-#define whC_A 49  // Wheel C output B
-#define whC_B 48 // wheel C output A
-#define whD_A 46 // wheel D output B
-#define whD_B 47 // wheel D output A
-#define whE_A 8 // wheel E output B
-#define whE_B 7 // wheel E output A
-//No 2 or 1 for serial link functionality
-#define whF_A 42 // wheel F output B 
-#define whF_B 43 // wheel F output A
+#define whA_A 50    // Wheel A output B
+#define whA_B 51    // Wheel A output A
+
+#define whB_A 52    // Wheel B output B
+#define whB_B 53    // Wheel B output A
+
+// --- SWAP C ↔ D ---
+#define whC_A 46    // Wheel C output B
+#define whC_B 47    // Wheel C output A
+
+#define whD_A 49    // Wheel D output B
+#define whD_B 48    // Wheel D output A
+
+// --- SWAP E ↔ F ---
+#define whE_A 42    // Wheel E output B
+#define whE_B 43    // Wheel E output A
+
+#define whF_A 8     // Wheel F output B
+#define whF_B 7     // Wheel F output A
+
 
 #define PWM_A 35 
-#define in1_A 30 
-#define in2_A 31 
-#define in1_B 32 
-#define in2_B 33 
+#define in1_A 32 
+#define in2_A 33 
+#define in1_B 30 
+#define in2_B 31 
 #define PWM_B 37 
 
 #define PWM_C 39 
 #define in1_C 27 
 #define in2_C 26 
-#define in1_D 28 
+#define in1_D 28
 #define in2_D 29 
 #define PWM_D 41 
 
@@ -130,29 +137,57 @@ void reverse(float duty) {
 
 void turnRight(float duty) {
   int trueDuty = 1200 - int(1200 * duty);
-  PWMC_SetDutyCycle(PWM, chA, trueDuty); PWMC_SetDutyCycle(PWM, chB, trueDuty);
-  digitalWrite(in1_A, LOW); digitalWrite(in2_A, HIGH); digitalWrite(in1_B, HIGH); digitalWrite(in2_B, LOW);
 
-  PWMC_SetDutyCycle(PWM, chC, trueDuty); PWMC_SetDutyCycle(PWM, chD, trueDuty);
-  digitalWrite(in1_C, LOW); digitalWrite(in2_C, HIGH); digitalWrite(in1_D, HIGH); digitalWrite(in2_D, LOW);
+  // LEFT SIDE FORWARD (A, C, E)
+  PWMC_SetDutyCycle(PWM, chA, trueDuty);
+  digitalWrite(in1_A, HIGH); digitalWrite(in2_A, LOW);
 
-  PWMC_SetDutyCycle(PWM, chE, trueDuty); PWMC_SetDutyCycle(PWM, chF, trueDuty);
-  digitalWrite(in1_E, LOW); digitalWrite(in2_E, HIGH); digitalWrite(in1_F, HIGH); digitalWrite(in2_F, LOW);
+  PWMC_SetDutyCycle(PWM, chC, trueDuty);
+  digitalWrite(in1_C, HIGH); digitalWrite(in2_C, LOW);
+
+  PWMC_SetDutyCycle(PWM, chE, trueDuty);
+  digitalWrite(in1_E, HIGH); digitalWrite(in2_E, LOW);
+
+  // RIGHT SIDE REVERSE (B, D, F)
+  PWMC_SetDutyCycle(PWM, chB, trueDuty);
+  digitalWrite(in1_B, LOW); digitalWrite(in2_B, HIGH);
+
+  PWMC_SetDutyCycle(PWM, chD, trueDuty);
+  digitalWrite(in1_D, LOW); digitalWrite(in2_D, HIGH);
+
+  PWMC_SetDutyCycle(PWM, chF, trueDuty);
+  digitalWrite(in1_F, LOW); digitalWrite(in2_F, HIGH);
+
   Serial.println("Turning Right");
 }
 
+
 void turnLeft(float duty) {
   int trueDuty = 1200 - int(1200 * duty);
-  PWMC_SetDutyCycle(PWM, chA, trueDuty); PWMC_SetDutyCycle(PWM, chB, trueDuty);
-  digitalWrite(in1_A, HIGH); digitalWrite(in2_A, LOW); digitalWrite(in1_B, LOW); digitalWrite(in2_B, HIGH);
 
-  PWMC_SetDutyCycle(PWM, chC, trueDuty); PWMC_SetDutyCycle(PWM, chD, trueDuty);
-  digitalWrite(in1_C, HIGH); digitalWrite(in2_C, LOW); digitalWrite(in1_D, LOW); digitalWrite(in2_D, HIGH);
+  // LEFT SIDE REVERSE (A, C, E)
+  PWMC_SetDutyCycle(PWM, chA, trueDuty);
+  digitalWrite(in1_A, LOW); digitalWrite(in2_A, HIGH);
 
-  PWMC_SetDutyCycle(PWM, chE, trueDuty); PWMC_SetDutyCycle(PWM, chF, trueDuty);
-  digitalWrite(in1_E, HIGH); digitalWrite(in2_E, LOW); digitalWrite(in1_F, LOW); digitalWrite(in2_F, HIGH);
+  PWMC_SetDutyCycle(PWM, chC, trueDuty);
+  digitalWrite(in1_C, LOW); digitalWrite(in2_C, HIGH);
+
+  PWMC_SetDutyCycle(PWM, chE, trueDuty);
+  digitalWrite(in1_E, LOW); digitalWrite(in2_E, HIGH);
+
+  // RIGHT SIDE FORWARD (B, D, F)
+  PWMC_SetDutyCycle(PWM, chB, trueDuty);
+  digitalWrite(in1_B, HIGH); digitalWrite(in2_B, LOW);
+
+  PWMC_SetDutyCycle(PWM, chD, trueDuty);
+  digitalWrite(in1_D, HIGH); digitalWrite(in2_D, LOW);
+
+  PWMC_SetDutyCycle(PWM, chF, trueDuty);
+  digitalWrite(in1_F, HIGH); digitalWrite(in2_F, LOW);
+
   Serial.println("Turning Left");
 }
+
 
 void stop() {
   int trueDuty = 1200;
@@ -271,16 +306,16 @@ void setup() {
 void loop() {
   unsigned long currentMillis = millis();
 
-  if (currentMillis < 5000) {        // Forward for 10 seconds
-      turnRight(0.92);              
+  if (currentMillis < 10000) {        // Forward for 10 seconds    
+      forward(0.85);    
   } 
-  else if (currentMillis < 15000) {
-      forward(0.85);  
-  }
   else if (currentMillis < 20000) {
+      turnRight(0.92);  
+  }
+  else if (currentMillis < 30000) {
       turnLeft(0.92);    
   } 
-  else if (currentMillis < 30000) {
+  else if (currentMillis < 40000) {
       reverse(0.85);    
   }     
   else {         
