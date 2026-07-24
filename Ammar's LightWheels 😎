@@ -289,7 +289,7 @@ void setup(){
     Serial1.write(Rasengan, 5);
 
     // --- AUTO-INCREMENT FILE NAME LOGIC ---
-    char fileName[15] = "LOG00.CSV";
+    char fileName[15] = "LWLOG00.CSV";
     for (uint8_t i = 0; i < 100; i++) {
         fileName[3] = i / 10 + '0';
         fileName[4] = i % 10 + '0';
